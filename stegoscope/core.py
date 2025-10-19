@@ -5,11 +5,23 @@ import re
 import string
 
 
-def run_all(file_path: str, outdir: str, flag_format: str = ""):
+def run_all(file_path: str, outdir: str | None = None, flag_format: str = ""):
     """
-    Core scanning engine (currently partially implemented).
-    Creates output folder, performs basic scans, and prints progress.
+    Core scanning engine.
+    Creates an output folder named <file>_output.
+    If that folder exists, increments numerically (_output2, _output3, etc).
+    Performs basic flag scan and saves results.
     """
+    base_name = os.path.splitext(os.path.basename(file_path))[0]
+
+    # If no output directory is provided, auto-generate it
+    if not outdir:
+        outdir = f"{base_name}_output"
+        count = 2
+        while os.path.exists(outdir):
+            outdir = f"{base_name}_output{count}"
+            count += 1
+
     os.makedirs(outdir, exist_ok=True)
 
     print(f"[CORE] Scanning file: {file_path}")
@@ -35,7 +47,7 @@ def run_all(file_path: str, outdir: str, flag_format: str = ""):
     else:
         print("[CORE] Skipping string-based flag scan (no format provided).")
 
-    # --- Step 2: Placeholder for other modules ---
+    # --- Step 2: Placeholder for future modules ---
     placeholder_files = [
         "lsb_stub.bin",
         "metadata_stub.txt",
@@ -48,6 +60,7 @@ def run_all(file_path: str, outdir: str, flag_format: str = ""):
             fh.write(f"[CORE STUB] Placeholder for {f}\n")
 
     print(f"[CORE] Placeholder outputs created in {outdir}")
+    return outdir  # Return directory so CLI can print it
 
 
 def extract_strings(data, min_length=4):
