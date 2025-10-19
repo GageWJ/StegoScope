@@ -20,12 +20,6 @@ def main():
 @main.command()
 @click.argument("file", type=click.Path(exists=True))
 @click.option(
-    "--outdir",
-    "-o",
-    default="output",
-    help="Directory to save scan outputs (will be created if not exists)",
-)
-@click.option(
     "--flag-format",
     "-f",
     default="",
@@ -37,7 +31,7 @@ def main():
     default=False,
     help="Skip interactive prompt; use --flag-format instead",
 )
-def analyze(file, outdir, flag_format, no_prompt):
+def analyze(file, flag_format, no_prompt):
     """
     Analyze FILE for steganography. Prompts for flag format unless --no-prompt is used.
     """
@@ -46,14 +40,18 @@ def analyze(file, outdir, flag_format, no_prompt):
     if os.path.exists(banner_path):
         with open(banner_path, "r") as f:
             console.print(Panel.fit(f.read(), border_style="cyan"))
+<<<<<<< HEAD
     else:
         console.print("[bold cyan]StegoScope[/bold cyan] - Steganography Scanner")
+=======
+>>>>>>> feature/strings-scan
 
     # --- Prompt for flag format if not supplied ---
     if not flag_format and not no_prompt:
         console.print("[bold cyan]Enter flag format (e.g. gctf{flag}) or press Enter to skip:[/]")
         flag_format = Prompt.ask("Flag format", default="").strip()
 
+<<<<<<< HEAD
     # --- Prepare output directory ---
     os.makedirs(outdir, exist_ok=True)
     console.print(f"[green]Outputs will be saved to:[/] {outdir}\n")
@@ -69,15 +67,31 @@ def analyze(file, outdir, flag_format, no_prompt):
         run_all(file, outdir, flag_format=flag_format)
 
         # (Future) other steps like exiftool, steghide, etc.
+=======
+    # --- Run scan with progress indicator ---
+    console.print(f"[yellow]Scanning file:[/] {file}\n")
+
+    with Progress() as progress:
+        task = progress.add_task("[cyan]Running scans...", total=4)
+        progress.update(task, description="[cyan]Step 1: Searching for flag format...", advance=1)
+        output_dir = run_all(file, None, flag_format)
+>>>>>>> feature/strings-scan
         progress.update(task, description="[cyan]Step 2: LSB scan placeholder...", advance=1)
         progress.update(task, description="[cyan]Step 3: Metadata scan placeholder...", advance=1)
         progress.update(task, description="[cyan]Step 4: Binwalk scan placeholder...", advance=1)
 
     console.print("\n[bold green]✅ Scan completed successfully![/bold green]")
+<<<<<<< HEAD
     console.print(f"Check results in: [italic]{outdir}[/italic]\n")
 
     # --- Summary of results if flags found ---
     flags_path = os.path.join(outdir, "found_flags.txt")
+=======
+    console.print(f"[green]Results saved in:[/] [italic]{output_dir}[/italic]\n")
+
+    # --- Print found flags if any ---
+    flags_path = os.path.join(output_dir, "found_flags.txt")
+>>>>>>> feature/strings-scan
     if os.path.exists(flags_path):
         with open(flags_path, "r") as fh:
             found_flags = [line.strip() for line in fh if line.strip()]

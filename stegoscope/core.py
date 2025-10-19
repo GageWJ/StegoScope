@@ -5,13 +5,18 @@ import re
 import string
 
 
+<<<<<<< HEAD
 def run_all(file_path: str, outdir: str = "", flag_format: str = ""):
+=======
+def run_all(file_path: str, outdir: str | None = None, flag_format: str = ""):
+>>>>>>> feature/strings-scan
     """
     Core scanning engine.
     Creates an output folder named <file>_output.
     If that folder exists, increments numerically (_output2, _output3, etc).
     Performs basic flag scan and saves results.
     """
+<<<<<<< HEAD
     # Derive folder name from the input file
     base_name = os.path.splitext(os.path.basename(file_path))[0]
     output_dir = f"{base_name}_output"
@@ -23,6 +28,19 @@ def run_all(file_path: str, outdir: str = "", flag_format: str = ""):
         count += 1
 
     os.makedirs(output_dir, exist_ok=True)
+=======
+    base_name = os.path.splitext(os.path.basename(file_path))[0]
+
+    # If no output directory is provided, auto-generate it
+    if not outdir:
+        outdir = f"{base_name}_output"
+        count = 2
+        while os.path.exists(outdir):
+            outdir = f"{base_name}_output{count}"
+            count += 1
+
+    os.makedirs(outdir, exist_ok=True)
+>>>>>>> feature/strings-scan
 
     print(f"[CORE] Scanning file: {file_path}")
     if flag_format:
@@ -59,7 +77,12 @@ def run_all(file_path: str, outdir: str = "", flag_format: str = ""):
         with open(path, "w") as fh:
             fh.write(f"[CORE STUB] Placeholder for {f}\n")
 
+<<<<<<< HEAD
     print(f"[CORE] Placeholder outputs created in {output_dir}")
+=======
+    print(f"[CORE] Placeholder outputs created in {outdir}")
+    return outdir  # Return directory so CLI can print it
+>>>>>>> feature/strings-scan
 
 
 def extract_strings(data, min_length=4):
