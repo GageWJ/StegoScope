@@ -3,99 +3,110 @@
 import os
 import re
 import string
+from PIL import Image
 
 
 def run_all(file_path: str, outdir: str | None = None, flag_format: str = ""):
     """
     Core scanning engine.
-    Creates an output folder named <file>_output.
-    If that folder exists, increments numerically (_output2, _output3, etc).
-    Performs basic flag scan and saves results.
+    Runs each detection step in sequence.
+    Stops early if a flag is found.
     """
     base_name = os.path.splitext(os.path.basename(file_path))[0]
 
-    # If no output directory is provided, auto-generate it
+    # Create auto-named output directory
     if not outdir:
         outdir = f"{base_name}_output"
         count = 2
         while os.path.exists(outdir):
             outdir = f"{base_name}_output{count}"
             count += 1
-
     os.makedirs(outdir, exist_ok=True)
 
     print(f"[CORE] Scanning file: {file_path}")
-    if flag_format:
-        print(f"[CORE] Using flag format: {flag_format}")
-    else:
-        print("[CORE] No flag format provided")
+    print(f"[CORE] Flag format: {flag_format if flag_format else '(none)'}")
 
-    # --- Step 1: Strings-based scan ---
+    # ── Step 1: Strings scan ──────────────────────────────────────────────
     if flag_format:
         found_flags = scan_for_flag(file_path, flag_format)
         if found_flags:
-            print("\n[CORE] Possible flags found:")
+            print("\n[CORE] ✅ Flag(s) found in strings:")
             for f in found_flags:
                 print(f"  - {f}")
-            # Save results
             flags_out = os.path.join(outdir, "found_flags.txt")
             with open(flags_out, "w") as fh:
                 fh.write("\n".join(found_flags))
-            print(f"[CORE] Saved found flags to {flags_out}")
+            print(f"[CORE] Saved to {flags_out}")
+            return outdir                     # stop early
         else:
-            print("[CORE] No flags matching that format were found.")
+            print("[CORE] No flags found in strings. Moving on...")
     else:
-        print("[CORE] Skipping string-based flag scan (no format provided).")
+        print("[CORE] Skipping strings step (no flag format).")
 
-    # --- Step 2: Placeholder for future modules ---
-    placeholder_files = [
-        "lsb_stub.bin",
-        "metadata_stub.txt",
-        "steghide_stub.txt",
-        "binwalk_stub.txt"
-    ]
-    for f in placeholder_files:
-        path = os.path.join(outdir, f)
-        with open(path, "w") as fh:
-            fh.write(f"[CORE STUB] Placeholder for {f}\n")
+    # ── Step 2: LSB scan ──────────────────────────────────────────────────
+    lsb_flags = scan_lsb(file_path, outdir, flag_format)
+    if lsb_flags:
+        print("\n[CORE] ✅ Flag(s) found in LSB:")
+        for f in lsb_flags:
+            print(f"  - {f}")
+        flags_out = os.path.join(outdir, "found_flags.txt")
+        with open(flags_out, "a") as fh:
+            fh.write("\n[From LSB extraction]\n")
+            fh.write("\n".join(lsb_flags))
+        return outdir                       # stop early
 
-    print(f"[CORE] Placeholder outputs created in {outdir}")
-    return outdir  # Return directory so CLI can print it
+    # ── Step 3: placeholders for future checks ────────────────────────────
+    for name in ["metadata_stub.txt", "steghide_stub.txt", "binwalk_stub.txt"]:
+        with open(os.path.join(outdir, name), "w") as f:
+            f.write(f"[CORE STUB] Placeholder for {name}\n")
+
+    print("[CORE] No flags found in any step.")
+    return outdir
 
 
 def extract_strings(data, min_length=4):
-    """Extracts printable strings from binary data."""
-    result = []
-    current = ""
-    for byte in data:
-        char = chr(byte)
-        if char in string.printable and not char.isspace():
-            current += char
-        else:
-            if len(current) >= min_length:
-                result.append(current)
-            current = ""
-    if len(current) >= min_length:
-        result.append(current)
-    return result
+    """Fast printable-ASCII extraction using regex."""
+    pattern = rb"[\x20-\x7E]{%d,}" % min_length
+    return [s.decode("ascii", errors="ignore") for s in re.findall(pattern, data)]
 
 
 def scan_for_flag(file_path, flag_format):
-    """Scans a file for potential flags matching the given format."""
+    """Searches extracted strings for flags matching the given format."""
     with open(file_path, "rb") as f:
         data = f.read()
-
-    found_flags = []
     strings_found = extract_strings(data)
 
-    # Build a flexible regex pattern from the flag format
-    # Example: gctf{flag} -> r"gctf\{[A-Za-z0-9_!@#$%^&*?.-]+\}"
-    pattern = re.escape(flag_format.split("{")[0]) + r"\{[A-Za-z0-9_!@#$%^&*?.-]+\}"
-    regex = re.compile(pattern)
+    prefix = flag_format.split("{")[0]
+    pattern = re.escape(prefix) + r"\{[A-Za-z0-9_!@#$%^&*?.\-\s]+\}"
+    regex = re.compile(pattern, re.IGNORECASE)
 
-    for s in strings_found:
-        if regex.search(s):
-            found_flags.append(s)
+    return [s for s in strings_found if regex.search(s)]
+
+
+def scan_lsb(file_path, outdir, flag_format=""):
+    """Extracts Least Significant Bits and searches them for the flag format."""
+    output_file = os.path.join(outdir, "lsb_extract.txt")
+    found_flags = []
+
+    try:
+        img = Image.open(file_path)
+        bits = "".join(str(c & 1) for p in list(img.getdata()) for c in p[:3])
+        data = "".join(chr(int(bits[i:i + 8], 2)) for i in range(0, len(bits), 8) if len(bits[i:i + 8]) == 8)
+
+        with open(output_file, "w") as f:
+            f.write(data)
+        print(f"[CORE] LSB data written to {output_file}")
+
+        if flag_format:
+            prefix = flag_format.split("{")[0]
+            pattern = re.escape(prefix) + r"\{[A-Za-z0-9_!@#$%^&*?.\-\s]+\}"
+            regex = re.compile(pattern, re.IGNORECASE)
+            found_flags = regex.findall(data)
+            if found_flags:
+                with open(output_file, "a") as f:
+                    f.write("\n\n[Possible flags found:]\n" + "\n".join(found_flags))
+    except Exception as e:
+        print(f"[CORE] Error in LSB scan: {e}")
 
     return found_flags
 
