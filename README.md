@@ -21,11 +21,12 @@ All results are saved to a structured output directory for easy review.
 
 1. Install Python 3.8 or newer
 
-2. Clone the Repository
+2. Clone the Repository: 
 git clone https://github.com/gagejohnson/stegoscope.git
+
 cd stegoscope
 
-3. Install Dependencies
+3. Install Dependencies: 
 StegoScope requires a few Python libraries and the Binwalk tool.
 
 Install Python dependencies: pip install .
@@ -34,17 +35,17 @@ Install Binwalk:
 macOS (Homebrew): brew install binwalk
 Debian/Ubuntu:sudo apt install binwalk
 
-4. Usage
+4. Usage: 
 Once installed, run StegoScope through the command line.
 
 stegoscope analyze image.png
 
 This performs all three analysis steps and saves results in: image_output/
 
-License
+License: 
 This project is licensed under the MIT License.
 You may freely use, modify, and distribute this software under its terms.
 
-Author
+Author: 
 Gage Johnson
 
