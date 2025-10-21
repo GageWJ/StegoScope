@@ -141,7 +141,7 @@ def scan_for_text_and_files(file_path: str):
     )
     url_pattern = re.compile(r"https?://[A-Za-z0-9./_\-]+", re.IGNORECASE)
     path_pattern = re.compile(r"(?:/[^ ]+/[^ ]+|[A-Za-z]:\\[^ ]+)", re.IGNORECASE)
-    readable_pattern = re.compile(r"[A-Z][a-z’']+(?: [A-Za-z0-9’'\",!?.:-]+){3,}")
+    readable_pattern = re.compile(r"\b[a-zA-Z]+(?: [a-zA-Z0-9,'\"!?.:-]+){4,}\b")  # <-- fixed for lowercase
 
     ignore_domains = ["adobe.com", "w3.org", "purl.org", "schemas.microsoft.com", "ns.adobe.com", "xmlns"]
 
@@ -197,7 +197,6 @@ def scan_lsb(file_path: str, outdir: str, flag_format: str = ""):
                 with open(output_file, "a") as f:
                     f.write("\n\n[Possible Flags Found:]\n" + "\n".join(found_flags))
 
-        # Detect readable text / paths / files in LSB
         temp_file = os.path.join(outdir, "_lsb_temp.txt")
         with open(temp_file, "w") as f:
             f.write(data)
@@ -248,17 +247,18 @@ def scan_binwalk_cli(file_path: str, outdir: str):
             if re.match(r"^\d+", line):
                 results.append(line)
 
-        if results:
+        # Only report if more than one embedded file is found
+        if len(results) > 1:
             results_path = os.path.join(outdir, "binwalk_results.txt")
             with open(results_path, "w") as f:
                 f.write("[BINWALK RESULTS]\n" + "\n".join(results))
-            console.print(f"[cyan][CORE][/cyan] Binwalk found {len(results)} embedded file(s):")
+            console.print(f"[cyan][CORE][/cyan] Binwalk found {len(results)} embedded files:")
             for r in results:
                 console.print(Text(f"  - {r}", style="dim"))
             console.print(f"[cyan][CORE][/cyan] Extracted files saved to: {extract_dir}")
             console.print(f"[cyan][CORE][/cyan] Binwalk results saved to {results_path}")
         else:
-            console.print("[cyan][CORE][/cyan] Binwalk completed but found no embedded files.")
+            console.print("[cyan][CORE][/cyan] Binwalk detected only one file — skipping report.")
 
     except Exception as e:
         console.print(f"[cyan][CORE][/cyan] Error during Binwalk CLI scan: {e}")
