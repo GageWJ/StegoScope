@@ -4,16 +4,17 @@ import os
 import click
 from rich.console import Console
 from rich.prompt import Prompt
-from rich.panel import Panel
 from rich.progress import Progress
+from rich.text import Text
 from .core import run_all
 
 console = Console()
+VERSION = "v1.0.0"
 
 
 @click.group()
 def main():
-    """StegoScope - Automated steganography scanner"""
+    """StegoScope - Automated Steganography Scanner"""
     pass
 
 
@@ -35,49 +36,73 @@ def analyze(file, flag_format, no_prompt):
     """
     Analyze FILE for steganography. Prompts for flag format unless --no-prompt is used.
     """
-    # --- Display banner ---
+
+    # ---------------------------------------------------------------------
+    # Display banner (white, left-aligned)
+    # ---------------------------------------------------------------------
     banner_path = os.path.join(os.path.dirname(__file__), "assets", "banner.txt")
     if os.path.exists(banner_path):
         with open(banner_path, "r") as f:
-            console.print(Panel.fit(f.read(), border_style="cyan"))
+            banner_text = f.read()
+        console.print(f"[white]{banner_text}[/white]")
     else:
-        console.print("[bold cyan]StegoScope[/bold cyan] - Steganography Scanner")
+        console.print("[bold white]StegoScope[/bold white]")
 
-    # --- Prompt for flag format if not supplied ---
+    # Version text below banner
+    version_text = Text(f"StegoScope {VERSION} — Automated Steganography Scanner", style="dim cyan")
+    console.print(version_text)
+    console.print()  # blank line for spacing
+
+    # ---------------------------------------------------------------------
+    # Prompt for flag format
+    # ---------------------------------------------------------------------
     if not flag_format and not no_prompt:
         console.print("[bold cyan]Enter flag format (e.g. gctf{flag}) or press Enter to skip:[/]")
         flag_format = Prompt.ask("Flag format", default="").strip()
 
-    # --- Run scan with progress indicator ---
-    console.print(f"[yellow]Scanning file:[/] {file}\n")
+    console.print(f"\n[yellow]Scanning file:[/] {file}\n")
 
+    # ---------------------------------------------------------------------
+    # Progress bar
+    # ---------------------------------------------------------------------
     with Progress() as progress:
         task = progress.add_task("[cyan]Running scans...", total=3)
 
-        progress.update(task, description="[cyan]Step 1: Strings-based scan...", advance=1)
+        progress.update(task, description="[cyan bold]→ Step 1:[/] Strings-based scan", advance=1)
         output_dir = run_all(file, None, flag_format)
 
-        progress.update(task, description="[cyan]Step 2: LSB scan...", advance=1)
-        progress.update(task, description="[cyan]Step 3: Binwalk scan...", advance=1)
+        progress.update(task, description="[cyan bold]→ Step 2:[/] LSB scan", advance=1)
+        progress.update(task, description="[cyan bold]→ Step 3:[/] Binwalk analysis", advance=1)
 
-    console.print("\n[bold green]Scan completed successfully![/bold green]")
-    console.print(f"[green]Results saved in:[/] [italic]{output_dir}[/italic]\n")
+    # ---------------------------------------------------------------------
+    # Final output summary
+    # ---------------------------------------------------------------------
+    console.print("\n[bold green]✔ Scan completed successfully![/bold green]")
+    console.print(f"Results saved in: [italic cyan]{output_dir}[/italic cyan]\n")
 
-    # --- Print found flags if any ---
     flags_path = os.path.join(output_dir, "found_flags.txt")
     if os.path.exists(flags_path):
         with open(flags_path, "r") as fh:
             found_flags = [line.strip() for line in fh if line.strip()]
         if found_flags:
-            console.print(Panel.fit(
-                "\n".join(found_flags),
-                title="[bold yellow]Flags Found[/bold yellow]",
-                border_style="green"
-            ))
+            console.print("\n[bold yellow]Flags Found:[/bold yellow]")
+            for f in found_flags:
+                console.print(f"  • [green]{f}[/green]")
         else:
             console.print("[bold red]No flags found in file.[/bold red]")
     else:
         console.print("[bold red]No flags found in file.[/bold red]")
+
+    # Generated output files
+    output_files = [
+        "lsb_extract.txt",
+        "binwalk_results.txt",
+        "binwalk_raw_output.txt",
+        f"Extracted files directory: {os.path.join(output_dir, 'binwalk_extracted')}"
+    ]
+    console.print("\n[bold yellow]Generated output files:[/bold yellow]")
+    for f in output_files:
+        console.print(f"  • [cyan]{f}[/cyan]")
 
 
 if __name__ == "__main__":
