@@ -4,12 +4,11 @@ import os
 import click
 from rich.console import Console
 from rich.prompt import Prompt
-from rich.progress import Progress
 from rich.text import Text
 from .core import run_all
 
 console = Console()
-VERSION = "v1.2.0"  # Updated for LSB smart string detection
+VERSION = "v1.0.0"
 
 
 @click.group()
@@ -30,12 +29,10 @@ def main():
     "--no-prompt",
     is_flag=True,
     default=False,
-    help="Skip interactive prompt; use --flag-format instead",
+    help="Skip interactive prompt; use --flag-format instead.",
 )
 def analyze(file, flag_format, no_prompt):
-    """
-    Analyze FILE for steganography. Prompts for flag format unless --no-prompt is used.
-    """
+    """Analyze FILE for steganography. Prompts for flag format unless --no-prompt is used."""
 
     # ---------------------------------------------------------------------
     # Display banner (white, left-aligned)
@@ -48,46 +45,31 @@ def analyze(file, flag_format, no_prompt):
     else:
         console.print("[bold white]StegoScope[/bold white]")
 
-    # Version info
-    version_text = Text(
-        f"StegoScope {VERSION} — Automated Steganography Scanner",
-        style="dim cyan",
-    )
+    version_text = Text(f"StegoScope {VERSION} — Automated Steganography Scanner", style="dim cyan")
     console.print(version_text)
-    console.print()
+    console.print()  # spacing
 
     # ---------------------------------------------------------------------
     # Prompt for flag format
     # ---------------------------------------------------------------------
     if not flag_format and not no_prompt:
-        console.print(
-            "[bold cyan]Enter flag format (e.g. gctf{flag}) or press Enter to skip:[/]"
-        )
+        console.print("[bold cyan]Enter flag format (e.g. gctf{flag}) or press Enter to skip:[/]")
         flag_format = Prompt.ask("Flag format", default="").strip()
 
     console.print(f"\n[yellow]Scanning file:[/] {file}\n")
 
     # ---------------------------------------------------------------------
-    # Progress bar
+    # Run analysis (no progress bars)
     # ---------------------------------------------------------------------
-    with Progress() as progress:
-        task = progress.add_task("[cyan]Running scans...", total=3)
-
-        progress.update(
-            task, description="[cyan bold]→ Step 1:[/] Strings & Smart Text Scan", advance=1
-        )
-        output_dir = run_all(file, None, flag_format)
-
-        progress.update(task, description="[cyan bold]→ Step 2:[/] LSB Scan", advance=1)
-        progress.update(task, description="[cyan bold]→ Step 3:[/] Binwalk Analysis", advance=1)
+    output_dir = run_all(file, None, flag_format)
 
     # ---------------------------------------------------------------------
-    # Final Output Summary
+    # Final output summary
     # ---------------------------------------------------------------------
-    console.print("\n[bold green]✔ Scan completed successfully![/bold green]")
+    console.print("\n[bold green]Scan completed successfully![/bold green]")
     console.print(f"Results saved in: [italic cyan]{output_dir}[/italic cyan]\n")
 
-    # Flag detection summary
+    # Display found flags (if any)
     flags_path = os.path.join(output_dir, "found_flags.txt")
     if os.path.exists(flags_path):
         with open(flags_path, "r") as fh:
@@ -101,23 +83,16 @@ def analyze(file, flag_format, no_prompt):
     else:
         console.print("[bold red]No flags found in file.[/bold red]")
 
-    # ---------------------------------------------------------------------
-    # Generated Output Files
-    # ---------------------------------------------------------------------
+    # Show generated output files
     output_files = [
-        "interesting_strings.txt",
         "lsb_extract.txt",
-        "lsb_interesting.txt",
         "binwalk_results.txt",
         "binwalk_raw_output.txt",
-        f"Extracted files directory: {os.path.join(output_dir, 'binwalk_extracted')}",
+        f"Extracted files directory: {os.path.join(output_dir, 'binwalk_extracted')}"
     ]
-
-    console.print("\n[bold yellow]Generated Output Files:[/bold yellow]")
+    console.print("\n[bold yellow]Generated output files:[/bold yellow]")
     for f in output_files:
-        file_path = os.path.join(output_dir, f) if not f.startswith("Extracted") else f
-        if "Extracted" in f or os.path.exists(file_path):
-            console.print(f"  • [cyan]{f}[/cyan]")
+        console.print(f"  • [cyan]{f}[/cyan]")
 
 
 if __name__ == "__main__":

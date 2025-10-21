@@ -13,18 +13,17 @@ import os
 import re
 import subprocess
 from PIL import Image
+from rich.console import Console
+from rich.text import Text
+
+console = Console()
 
 
 # =========================================================================
 # Main Execution Function
 # =========================================================================
 def run_all(file_path: str, outdir: str | None = None, flag_format: str = ""):
-    """
-    Executes all StegoScope analysis steps in sequence:
-      1. Strings-based flag + readable text detection
-      2. LSB (Least Significant Bit) data extraction
-      3. Binwalk embedded file extraction
-    """
+    """Executes all StegoScope analysis steps in sequence."""
     base_name = os.path.splitext(os.path.basename(file_path))[0]
 
     # Create output directory (unique name if exists)
@@ -36,8 +35,8 @@ def run_all(file_path: str, outdir: str | None = None, flag_format: str = ""):
             counter += 1
     os.makedirs(outdir, exist_ok=True)
 
-    print(f"[CORE] Scanning file: {file_path}")
-    print(f"[CORE] Flag format: {flag_format if flag_format else '(none)'}")
+    console.print(f"[cyan][CORE][/cyan] Scanning file: {file_path}")
+    console.print(f"[cyan][CORE][/cyan] Flag format: {flag_format if flag_format else '(none)'}")
 
     # -------------------------------
     # Step 1: Strings-based scanning
@@ -46,38 +45,38 @@ def run_all(file_path: str, outdir: str | None = None, flag_format: str = ""):
     if flag_format:
         found_flags = scan_for_flag(file_path, flag_format)
         if found_flags:
-            print("\n[CORE] Flag(s) found in strings:")
+            console.print("\n[cyan][CORE][/cyan] Flag(s) found in strings:")
             for f in found_flags:
-                print(f"  - {f}")
+                console.print(f"  - {f}")
             flags_path = os.path.join(outdir, "found_flags.txt")
             with open(flags_path, "w") as fh:
                 fh.write("\n".join(found_flags))
-            print(f"[CORE] Saved results to {flags_path}")
+            console.print(f"[cyan][CORE][/cyan] Saved results to {flags_path}")
             return outdir
         else:
-            print("[CORE] No flags found in strings. Checking for other readable data...")
+            console.print("[cyan][CORE][/cyan] No flags found in strings. Checking for other readable data...")
     else:
-        print("[CORE] Skipping flag search (no flag format provided).")
+        console.print("[cyan][CORE][/cyan] Skipping flag search (no flag format provided).")
 
     # Step 1B: Detect readable text, URLs, and file-like strings
     extra_text = scan_for_text_and_files(file_path)
     if extra_text:
-        print(f"\n[CORE] Found {len(extra_text)} readable or file-related strings:")
-        for line in extra_text[:10]:  # Limit terminal output
-            print(f"  - {line}")
+        console.print(f"\n[cyan][CORE][/cyan] Found {len(extra_text)} readable or file-related strings:")
+        for line in extra_text[:10]:  # Limit output
+            console.print(Text(f"  - {line}", style="dim"))
         extra_path = os.path.join(outdir, "interesting_strings.txt")
         with open(extra_path, "w") as f:
             f.write("\n".join(extra_text))
-        print(f"[CORE] Saved readable string results to {extra_path}")
+        console.print(f"[cyan][CORE][/cyan] Saved readable string results to {extra_path}")
 
     # -------------------------------
     # Step 2: LSB-based scanning
     # -------------------------------
     lsb_flags = scan_lsb(file_path, outdir, flag_format)
     if lsb_flags:
-        print("\n[CORE] Flag(s) found in LSB data:")
+        console.print("\n[cyan][CORE][/cyan] Flag(s) found in LSB data:")
         for f in lsb_flags:
-            print(f"  - {f}")
+            console.print(f"  - {f}")
         flags_path = os.path.join(outdir, "found_flags.txt")
         with open(flags_path, "a") as fh:
             fh.write("\n[From LSB Extraction]\n")
@@ -89,7 +88,7 @@ def run_all(file_path: str, outdir: str | None = None, flag_format: str = ""):
     # -------------------------------
     scan_binwalk_cli(file_path, outdir)
 
-    print("[CORE] Analysis complete — no flags found in any step.")
+    console.print("[cyan][CORE][/cyan] Analysis complete — no flags found in any step.")
     return outdir
 
 
@@ -121,10 +120,7 @@ def scan_for_flag(file_path: str, flag_format: str):
 # Step 1B: Detect Readable Text, Paths, and Filenames
 # =========================================================================
 def scan_for_text_and_files(file_path: str):
-    """
-    Detects readable text, URLs, file paths, and filenames from extracted strings.
-    Filters out short, noisy, or metadata-related strings.
-    """
+    """Detects readable text, URLs, file paths, and filenames from extracted strings."""
     with open(file_path, "rb") as f:
         data = f.read()
 
@@ -146,7 +142,6 @@ def scan_for_text_and_files(file_path: str):
     url_pattern = re.compile(r"https?://[A-Za-z0-9./_\-]+", re.IGNORECASE)
     path_pattern = re.compile(r"(?:/[^ ]+/[^ ]+|[A-Za-z]:\\[^ ]+)", re.IGNORECASE)
     readable_pattern = re.compile(r"[A-Z][a-z’']+(?: [A-Za-z0-9’'\",!?.:-]+){3,}")
-
 
     ignore_domains = ["adobe.com", "w3.org", "purl.org", "schemas.microsoft.com", "ns.adobe.com", "xmlns"]
 
@@ -176,10 +171,7 @@ def scan_for_text_and_files(file_path: str):
 # Step 2: LSB Extraction (Enhanced)
 # =========================================================================
 def scan_lsb(file_path: str, outdir: str, flag_format: str = ""):
-    """
-    Extracts least significant bit (LSB) data from an image and searches for flags.
-    Also detects readable text, file paths, and URLs inside the extracted LSB data.
-    """
+    """Extracts least significant bit (LSB) data from an image and searches for flags."""
     output_file = os.path.join(outdir, "lsb_extract.txt")
     found_flags = []
 
@@ -194,11 +186,8 @@ def scan_lsb(file_path: str, outdir: str, flag_format: str = ""):
 
         with open(output_file, "w") as f:
             f.write(data)
-        print(f"[CORE] LSB data written to {output_file}")
+        console.print(f"[cyan][CORE][/cyan] LSB data written to {output_file}")
 
-        # -----------------------------------------------------------------
-        # Flag detection in LSB
-        # -----------------------------------------------------------------
         if flag_format:
             prefix = flag_format.split("{")[0]
             pattern = re.escape(prefix) + r"\{[A-Za-z0-9_!@#$%^&*?.\-\s]+\}"
@@ -208,9 +197,7 @@ def scan_lsb(file_path: str, outdir: str, flag_format: str = ""):
                 with open(output_file, "a") as f:
                     f.write("\n\n[Possible Flags Found:]\n" + "\n".join(found_flags))
 
-        # -----------------------------------------------------------------
         # Detect readable text / paths / files in LSB
-        # -----------------------------------------------------------------
         temp_file = os.path.join(outdir, "_lsb_temp.txt")
         with open(temp_file, "w") as f:
             f.write(data)
@@ -218,39 +205,19 @@ def scan_lsb(file_path: str, outdir: str, flag_format: str = ""):
         interesting = scan_for_text_and_files(temp_file)
         os.remove(temp_file)
 
-        # Filter and save LSB interesting strings
         if interesting:
-            clean_interesting = []
-            ignore_domains = [
-                "adobe.com", "w3.org", "purl.org",
-                "schemas.microsoft.com", "ns.adobe.com", "xmlns"
-            ]
-            for s in interesting:
-                if len(s) < 5:
-                    continue
-                if not re.search(r"[A-Za-z0-9]", s):
-                    continue
-                if len(re.sub(r"[A-Za-z0-9]", "", s)) > len(s) * 0.6:
-                    continue
-                if any(domain in s.lower() for domain in ignore_domains):
-                    continue
-                clean_interesting.append(s)
-
-            if clean_interesting:
-                lsb_interesting_path = os.path.join(outdir, "lsb_interesting.txt")
-                with open(lsb_interesting_path, "w") as f:
-                    f.write("\n".join(clean_interesting))
-                print(f"[CORE] Found {len(clean_interesting)} readable or file-related strings in LSB:")
-                for s in clean_interesting[:10]:
-                    print(f"  - {s}")
-                print(f"[CORE] Saved LSB readable strings to {lsb_interesting_path}")
-            else:
-                print("[CORE] No relevant readable text found in LSB.")
+            lsb_interesting_path = os.path.join(outdir, "lsb_interesting.txt")
+            with open(lsb_interesting_path, "w") as f:
+                f.write("\n".join(interesting))
+            console.print(f"[cyan][CORE][/cyan] Found {len(interesting)} readable or file-related strings in LSB:")
+            for s in interesting[:10]:
+                console.print(Text(f"  - {s}", style="dim"))
+            console.print(f"[cyan][CORE][/cyan] Saved LSB readable strings to {lsb_interesting_path}")
         else:
-            print("[CORE] No readable data detected in LSB.")
+            console.print("[cyan][CORE][/cyan] No readable data detected in LSB.")
 
     except Exception as e:
-        print(f"[CORE] Error in LSB scan: {e}")
+        console.print(f"[cyan][CORE][/cyan] Error in LSB scan: {e}")
 
     return found_flags
 
@@ -265,7 +232,7 @@ def scan_binwalk_cli(file_path: str, outdir: str):
     os.makedirs(extract_dir, exist_ok=True)
 
     try:
-        print("[CORE] Running Binwalk CLI scan...")
+        console.print("[cyan][CORE][/cyan] Running Binwalk CLI scan...")
 
         cmd = ["binwalk", "-e", file_path, "-C", extract_dir]
         result = subprocess.run(cmd, capture_output=True, text=True)
@@ -285,16 +252,16 @@ def scan_binwalk_cli(file_path: str, outdir: str):
             results_path = os.path.join(outdir, "binwalk_results.txt")
             with open(results_path, "w") as f:
                 f.write("[BINWALK RESULTS]\n" + "\n".join(results))
-            print(f"[CORE] Binwalk found {len(results)} embedded file(s):")
+            console.print(f"[cyan][CORE][/cyan] Binwalk found {len(results)} embedded file(s):")
             for r in results:
-                print(f"  - {r}")
-            print(f"[CORE] Extracted files saved to: {extract_dir}")
-            print(f"[CORE] Binwalk results saved to {results_path}")
+                console.print(Text(f"  - {r}", style="dim"))
+            console.print(f"[cyan][CORE][/cyan] Extracted files saved to: {extract_dir}")
+            console.print(f"[cyan][CORE][/cyan] Binwalk results saved to {results_path}")
         else:
-            print("[CORE] Binwalk completed but found no embedded files.")
+            console.print("[cyan][CORE][/cyan] Binwalk completed but found no embedded files.")
 
     except Exception as e:
-        print(f"[CORE] Error during Binwalk CLI scan: {e}")
+        console.print(f"[cyan][CORE][/cyan] Error during Binwalk CLI scan: {e}")
 
     return results
 
