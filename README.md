@@ -22,7 +22,7 @@ All results are saved to a structured output directory for easy review.
 1. Install Python 3.8 or newer
 
 2. Clone the Repository: 
-git clone https://github.com/gagejohnson/stegoscope.git
+git clone https://github.com/GageWJ/stegoscope.git
 
 cd stegoscope
 
