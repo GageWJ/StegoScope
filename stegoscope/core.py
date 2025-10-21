@@ -145,7 +145,8 @@ def scan_for_text_and_files(file_path: str):
     )
     url_pattern = re.compile(r"https?://[A-Za-z0-9./_\-]+", re.IGNORECASE)
     path_pattern = re.compile(r"(?:/[^ ]+/[^ ]+|[A-Za-z]:\\[^ ]+)", re.IGNORECASE)
-    readable_pattern = re.compile(r"[A-Z][a-z]+(?: [A-Za-z0-9,'\"!?.:-]+){3,}")
+    readable_pattern = re.compile(r"[A-Z][a-z’']+(?: [A-Za-z0-9’'\",!?.:-]+){3,}")
+
 
     ignore_domains = ["adobe.com", "w3.org", "purl.org", "schemas.microsoft.com", "ns.adobe.com", "xmlns"]
 
