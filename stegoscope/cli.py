@@ -9,7 +9,7 @@ from rich.text import Text
 from .core import run_all
 
 console = Console()
-VERSION = "v1.0.0"
+VERSION = "v1.2.0"  # Updated for LSB smart string detection
 
 
 @click.group()
@@ -48,16 +48,21 @@ def analyze(file, flag_format, no_prompt):
     else:
         console.print("[bold white]StegoScope[/bold white]")
 
-    # Version text below banner
-    version_text = Text(f"StegoScope {VERSION} — Automated Steganography Scanner", style="dim cyan")
+    # Version info
+    version_text = Text(
+        f"StegoScope {VERSION} — Automated Steganography Scanner",
+        style="dim cyan",
+    )
     console.print(version_text)
-    console.print()  # blank line for spacing
+    console.print()
 
     # ---------------------------------------------------------------------
     # Prompt for flag format
     # ---------------------------------------------------------------------
     if not flag_format and not no_prompt:
-        console.print("[bold cyan]Enter flag format (e.g. gctf{flag}) or press Enter to skip:[/]")
+        console.print(
+            "[bold cyan]Enter flag format (e.g. gctf{flag}) or press Enter to skip:[/]"
+        )
         flag_format = Prompt.ask("Flag format", default="").strip()
 
     console.print(f"\n[yellow]Scanning file:[/] {file}\n")
@@ -68,18 +73,21 @@ def analyze(file, flag_format, no_prompt):
     with Progress() as progress:
         task = progress.add_task("[cyan]Running scans...", total=3)
 
-        progress.update(task, description="[cyan bold]→ Step 1:[/] Strings-based scan", advance=1)
+        progress.update(
+            task, description="[cyan bold]→ Step 1:[/] Strings & Smart Text Scan", advance=1
+        )
         output_dir = run_all(file, None, flag_format)
 
-        progress.update(task, description="[cyan bold]→ Step 2:[/] LSB scan", advance=1)
-        progress.update(task, description="[cyan bold]→ Step 3:[/] Binwalk analysis", advance=1)
+        progress.update(task, description="[cyan bold]→ Step 2:[/] LSB Scan", advance=1)
+        progress.update(task, description="[cyan bold]→ Step 3:[/] Binwalk Analysis", advance=1)
 
     # ---------------------------------------------------------------------
-    # Final output summary
+    # Final Output Summary
     # ---------------------------------------------------------------------
     console.print("\n[bold green]✔ Scan completed successfully![/bold green]")
     console.print(f"Results saved in: [italic cyan]{output_dir}[/italic cyan]\n")
 
+    # Flag detection summary
     flags_path = os.path.join(output_dir, "found_flags.txt")
     if os.path.exists(flags_path):
         with open(flags_path, "r") as fh:
@@ -93,16 +101,23 @@ def analyze(file, flag_format, no_prompt):
     else:
         console.print("[bold red]No flags found in file.[/bold red]")
 
-    # Generated output files
+    # ---------------------------------------------------------------------
+    # Generated Output Files
+    # ---------------------------------------------------------------------
     output_files = [
+        "interesting_strings.txt",
         "lsb_extract.txt",
+        "lsb_interesting.txt",
         "binwalk_results.txt",
         "binwalk_raw_output.txt",
-        f"Extracted files directory: {os.path.join(output_dir, 'binwalk_extracted')}"
+        f"Extracted files directory: {os.path.join(output_dir, 'binwalk_extracted')}",
     ]
-    console.print("\n[bold yellow]Generated output files:[/bold yellow]")
+
+    console.print("\n[bold yellow]Generated Output Files:[/bold yellow]")
     for f in output_files:
-        console.print(f"  • [cyan]{f}[/cyan]")
+        file_path = os.path.join(output_dir, f) if not f.startswith("Extracted") else f
+        if "Extracted" in f or os.path.exists(file_path):
+            console.print(f"  • [cyan]{f}[/cyan]")
 
 
 if __name__ == "__main__":
