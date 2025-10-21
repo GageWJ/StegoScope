@@ -33,6 +33,7 @@ Install Python dependencies: pip install .
 
 Install Binwalk:
 macOS (Homebrew): brew install binwalk
+
 Debian/Ubuntu:sudo apt install binwalk
 
 4. Usage: 
