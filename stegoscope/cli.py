@@ -52,14 +52,15 @@ def analyze(file, flag_format, no_prompt):
     console.print(f"[yellow]Scanning file:[/] {file}\n")
 
     with Progress() as progress:
-        task = progress.add_task("[cyan]Running scans...", total=2)
+        task = progress.add_task("[cyan]Running scans...", total=3)
 
         progress.update(task, description="[cyan]Step 1: Strings-based scan...", advance=1)
         output_dir = run_all(file, None, flag_format)
 
         progress.update(task, description="[cyan]Step 2: LSB scan...", advance=1)
+        progress.update(task, description="[cyan]Step 3: Binwalk scan...", advance=1)
 
-    console.print("\n[bold green]✅ Scan completed successfully![/bold green]")
+    console.print("\n[bold green]Scan completed successfully![/bold green]")
     console.print(f"[green]Results saved in:[/] [italic]{output_dir}[/italic]\n")
 
     # --- Print found flags if any ---
@@ -81,3 +82,4 @@ def analyze(file, flag_format, no_prompt):
 
 if __name__ == "__main__":
     main()
+
