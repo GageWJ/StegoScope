@@ -29,7 +29,14 @@ cd stegoscope
 3. Install Dependencies: 
 StegoScope requires a few Python libraries and the Binwalk tool.
 
-Install Python dependencies: pip install .
+Install Python dependencies: pip install --user .
+
+Note: If you see a message saying: 
+“The script stegoscope is installed in '~/.local/bin' which is not on PATH”,
+add that directory to your PATH:
+
+echo 'export PATH="$PATH:$HOME/.local/bin"' >> ~/.zshrc
+source ~/.zshrc
 
 Install Binwalk:
 macOS (Homebrew): brew install binwalk
