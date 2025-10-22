@@ -19,8 +19,14 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/gagejohnson/stegoscope"
-Repository = "https://github.com/gagejohnson/stegoscope"
+Homepage = "https://github.com/GageWJ/stegoscope"
+Repository = "https://github.com/GageWJ/stegoscope"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.package-data]
+stegoscope = ["assets/banner.txt"]
 
 [project.scripts]
 stegoscope = "stegoscope.cli:main"
