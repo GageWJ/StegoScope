@@ -34,9 +34,7 @@ def main():
 def analyze(file, flag_format, no_prompt):
     """Analyze FILE for steganography. Prompts for flag format unless --no-prompt is used."""
 
-    # ---------------------------------------------------------------------
-    # Display banner (white, left-aligned)
-    # ---------------------------------------------------------------------
+    # Display banner 
     banner_path = os.path.join(os.path.dirname(__file__), "assets", "banner.txt")
     if os.path.exists(banner_path):
         with open(banner_path, "r") as f:
@@ -47,29 +45,23 @@ def analyze(file, flag_format, no_prompt):
 
     version_text = Text(f"StegoScope {VERSION} — Automated Steganography Scanner", style="dim cyan")
     console.print(version_text)
-    console.print()  # spacing
+    console.print()  
 
-    # ---------------------------------------------------------------------
     # Prompt for flag format
-    # ---------------------------------------------------------------------
     if not flag_format and not no_prompt:
         console.print("[bold cyan]Enter flag format (e.g. gctf{flag}) or press Enter to skip:[/]")
         flag_format = Prompt.ask("Flag format", default="").strip()
 
     console.print(f"\n[yellow]Scanning file:[/] {file}\n")
 
-    # ---------------------------------------------------------------------
-    # Run analysis (no progress bars)
-    # ---------------------------------------------------------------------
+    # Run analysis 
     output_dir = run_all(file, None, flag_format)
 
-    # ---------------------------------------------------------------------
     # Final output summary
-    # ---------------------------------------------------------------------
     console.print("\n[bold green]Scan completed successfully![/bold green]")
     console.print(f"Results saved in: [italic cyan]{output_dir}[/italic cyan]\n")
 
-    # Display found flags (if any)
+    # Display found flags 
     flags_path = os.path.join(output_dir, "found_flags.txt")
     if os.path.exists(flags_path):
         with open(flags_path, "r") as fh:
@@ -83,7 +75,7 @@ def analyze(file, flag_format, no_prompt):
     else:
         console.print("[bold red]No flags found in file.[/bold red]")
 
-    # Show generated output files
+    # Shows generated output files
     output_files = [
         "lsb_extract.txt",
         "binwalk_results.txt",
