@@ -1,6 +1,5 @@
 """
 StegoScope - Core Analysis Engine
----------------------------------
 Primary detection pipeline for steganographic and hidden data analysis.
 
 Detection modules:
@@ -19,9 +18,7 @@ from rich.text import Text
 console = Console()
 
 
-# =========================================================================
 # Main Execution Function
-# =========================================================================
 def run_all(file_path: str, outdir: str | None = None, flag_format: str = ""):
     """Executes all StegoScope analysis steps in sequence."""
     base_name = os.path.splitext(os.path.basename(file_path))[0]
@@ -38,9 +35,8 @@ def run_all(file_path: str, outdir: str | None = None, flag_format: str = ""):
     console.print(f"[cyan][CORE][/cyan] Scanning file: {file_path}")
     console.print(f"[cyan][CORE][/cyan] Flag format: {flag_format if flag_format else '(none)'}")
 
-    # -------------------------------
+   
     # Step 1: Strings-based scanning
-    # -------------------------------
     found_flags = []
     if flag_format:
         found_flags = scan_for_flag(file_path, flag_format)
@@ -69,9 +65,8 @@ def run_all(file_path: str, outdir: str | None = None, flag_format: str = ""):
             f.write("\n".join(extra_text))
         console.print(f"[cyan][CORE][/cyan] Saved readable string results to {extra_path}")
 
-    # -------------------------------
+   
     # Step 2: LSB-based scanning
-    # -------------------------------
     lsb_flags = scan_lsb(file_path, outdir, flag_format)
     if lsb_flags:
         console.print("\n[cyan][CORE][/cyan] Flag(s) found in LSB data:")
@@ -83,27 +78,23 @@ def run_all(file_path: str, outdir: str | None = None, flag_format: str = ""):
             fh.write("\n".join(lsb_flags))
         return outdir
 
-    # -------------------------------
     # Step 3: Binwalk scan
-    # -------------------------------
     scan_binwalk_cli(file_path, outdir)
 
     console.print("[cyan][CORE][/cyan] Analysis complete — no flags found in any step.")
     return outdir
 
 
-# =========================================================================
+
 # Utility: Extract Printable Strings
-# =========================================================================
 def extract_strings(data: bytes, min_length: int = 4):
     """Extracts printable ASCII strings from binary data."""
     pattern = rb"[\x20-\x7E]{%d,}" % min_length
     return [s.decode("ascii", errors="ignore") for s in re.findall(pattern, data)]
 
 
-# =========================================================================
+
 # Step 1A: Flag Search
-# =========================================================================
 def scan_for_flag(file_path: str, flag_format: str):
     """Searches extracted strings for matches to the provided flag format."""
     with open(file_path, "rb") as f:
@@ -115,10 +106,7 @@ def scan_for_flag(file_path: str, flag_format: str):
     regex = re.compile(pattern, re.IGNORECASE)
     return [s for s in strings_found if regex.search(s)]
 
-
-# =========================================================================
 # Step 1B: Detect Readable Text, Paths, and Filenames
-# =========================================================================
 def scan_for_text_and_files(file_path: str):
     """Detects readable text, URLs, file paths, and filenames from extracted strings."""
     with open(file_path, "rb") as f:
@@ -141,7 +129,7 @@ def scan_for_text_and_files(file_path: str):
     )
     url_pattern = re.compile(r"https?://[A-Za-z0-9./_\-]+", re.IGNORECASE)
     path_pattern = re.compile(r"(?:/[^ ]+/[^ ]+|[A-Za-z]:\\[^ ]+)", re.IGNORECASE)
-    readable_pattern = re.compile(r"\b[a-zA-Z]+(?: [a-zA-Z0-9,'\"!?.:-]+){4,}\b")  # <-- fixed for lowercase
+    readable_pattern = re.compile(r"\b[a-zA-Z]+(?: [a-zA-Z0-9,'\"!?.:-]+){4,}\b")  
 
     ignore_domains = ["adobe.com", "w3.org", "purl.org", "schemas.microsoft.com", "ns.adobe.com", "xmlns"]
 
@@ -166,10 +154,7 @@ def scan_for_text_and_files(file_path: str):
 
     return list(set(interesting))
 
-
-# =========================================================================
 # Step 2: LSB Extraction (Enhanced)
-# =========================================================================
 def scan_lsb(file_path: str, outdir: str, flag_format: str = ""):
     """Extracts least significant bit (LSB) data from an image and searches for flags."""
     output_file = os.path.join(outdir, "lsb_extract.txt")
@@ -220,10 +205,7 @@ def scan_lsb(file_path: str, outdir: str, flag_format: str = ""):
 
     return found_flags
 
-
-# =========================================================================
 # Step 3: Binwalk CLI Integration
-# =========================================================================
 def scan_binwalk_cli(file_path: str, outdir: str):
     """Executes Binwalk CLI to detect and extract embedded files."""
     results = []
@@ -247,7 +229,7 @@ def scan_binwalk_cli(file_path: str, outdir: str):
             if re.match(r"^\d+", line):
                 results.append(line)
 
-        # Only report if more than one embedded file is found
+        # Make sure binwalk only reports if more than one file is found
         if len(results) > 1:
             results_path = os.path.join(outdir, "binwalk_results.txt")
             with open(results_path, "w") as f:
